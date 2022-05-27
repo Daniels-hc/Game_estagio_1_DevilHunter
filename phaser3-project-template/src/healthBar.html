@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html id="healthBar">
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body style="position: relative; display: inline-block; z-index: 0;">
+    <div>
+        <div
+            style="position: absolute; display: flex;  width: 100%; align-items: center; padding: 20px; padding-top: 30px; max-width: 400px;">
+
+            <div
+                style="background-color: blue; height: 34px; width: 30px; text-align: center; border: 2px solid white;">
+                <img src="./src/assets/vergil_icone.png" alt="icon" style="padding-top: 3px;">
+            </div>
+
+
+            <div style="position: relative; width: 100%; display: inline-block; border: 2px solid white;">
+                <div style="background-color: red; height: 30px;"></div>
+                <div id="playerHealth"
+                    style="position: absolute; background: #818cf8; top: 0; right: 0; bottom: 0; left: 0;">
+                </div>
+            </div>
+            <div></div>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"
+        integrity="sha512-VEBjfxWUOyzl0bAwh4gdLEaQyDYPvLrZql3pw1ifgb6fhEvZl9iDDehwHZ+dsMzA0Jfww8Xt7COSZuJ/slxc4Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+        </script>
+</body>
+
+</html>
