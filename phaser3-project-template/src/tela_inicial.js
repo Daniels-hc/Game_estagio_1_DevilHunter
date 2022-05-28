@@ -27,13 +27,14 @@ class TelaInicial extends Phaser.Scene {
 
         this.fundo = this.add.tileSprite(0, 0, 1000, 600, "fundo").setOrigin(0, 0);
         this.add.image(0, 0, "logo").setOrigin(0, 0);
-        this.add.image(0, 0, "autor").setOrigin(0, 0);
-        let buttonPlay = this.add.image(500, 320, "buttonPlay").setOrigin(0.5, 0.5).setScale(0.4);
-        let buttonComandos = this.add.image(500, 450, "buttonComandos").setOrigin(0.5, 0.5).setScale(0.4);
+        this.add.image(0, -10, "autor").setOrigin(0, 0);
+        let buttonPlay = this.add.image(500, 330, "buttonPlay").setOrigin(0.5, 0.5).setScale(0.4);
+        let buttonComandos = this.add.image(500, 460, "buttonComandos").setOrigin(0.5, 0.5).setScale(0.4);
         buttonPlay.setInteractive();
+        buttonComandos.setInteractive();
 
         buttonPlay.on("pointerdown", () => [this.scene.start("Game"), music.stop()]);
-
+        buttonComandos.on("pointerdown", () => [this.scene.start("TelaComandos"), music.stop()]);
     }
 
     update() {

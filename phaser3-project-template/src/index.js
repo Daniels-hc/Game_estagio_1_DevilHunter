@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import Game from "./game";
 import TelaInicial from "./tela_inicial";
+import TelaComandos from './tela_comandos';
 import TelaFinalGameOver from "./tela_final_game_over";
 import TelaFinalPlayerWins from "./tela_final_player_wins";
 
@@ -20,7 +21,8 @@ window.onload = function () {
         },
         pixelArt: true,
         zoom: 1.0,
-        scene: [TelaInicial, Game,
+        scene: [TelaInicial,
+            TelaComandos, Game,
             TelaFinalPlayerWins,
             TelaFinalGameOver]
     };
