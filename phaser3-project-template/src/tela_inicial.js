@@ -33,6 +33,8 @@ class TelaInicial extends Phaser.Scene {
         buttonPlay.setInteractive();
         buttonComandos.setInteractive();
 
+        var ocultarHP = document.querySelector('#healthbar').style.display = "none";
+
         buttonPlay.on("pointerdown", () => [this.scene.start("Game"), music.stop()]);
         buttonComandos.on("pointerdown", () => [this.scene.start("TelaComandos"), music.stop()]);
     }

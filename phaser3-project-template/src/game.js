@@ -26,6 +26,15 @@ import swooshSd from './assets/sound_effects/swoosh-espada.mp3';
 import ultimateSd from './assets/sound_effects/ultimate-espada.mp3';
 import ultimatevoiceSd from './assets/sound_effects/ultimate-voice.mp3';
 import voicebossSd from './assets/sound_effects/voice-boss.mp3';
+import voicebossDeadSd from './assets/sound_effects/boss-voice-kill.mp3';
+import enemyVoiceDeadSd from './assets/sound_effects/enemy-voice-kill.mp3';
+import rechargeHpSd from './assets/sound_effects/player-recharging-in-video-game.mp3';
+import heart from './assets/heart-icon.png';
+import beam from './assets/beam_boss.png';
+import explosionB from './assets/explosion_beam.png';
+import beamBSd from './assets/sound_effects/beam_boss.mp3';
+import explosionSd from './assets/sound_effects/Big-Explosion.mp3';
+
 
 var keyUp, keyDown, keyLeft, keyRight, keySPACE, keyENTER, keyA, keyS, keyD, keyZ, keyX, keyC;
 
@@ -105,6 +114,7 @@ var keyUp, keyDown, keyLeft, keyRight, keySPACE, keyENTER, keyA, keyS, keyD, key
         var hitBoxPlayerInvertido;
         var playerHealth = 100;
         var elwyn;
+        var heartHP;
     }
     {// Váriaveis inimigos -------------------// 
         var hitBoxEnemy;
@@ -135,6 +145,7 @@ var keyUp, keyDown, keyLeft, keyRight, keySPACE, keyENTER, keyA, keyS, keyD, key
         var enemyHealth7 = 3;
         var bossHealth = 6;
         var enemy_explode;
+        var beamBoss;
     }
 
     {// Variáveis de controle --------------------- //
@@ -157,8 +168,13 @@ var keyUp, keyDown, keyLeft, keyRight, keySPACE, keyENTER, keyA, keyS, keyD, key
         var kill;
         var finalControl = 0;
         var volumeControl = 0.3;
+        var controlHeart = 0;
+        var aux = 0;
+        var qtBeams = 0;
+        var controlExplosion;
     }
 
+    // Váriavaeis de efeitos de áudio ---------------------------------//
     var music;
     var ataqueSE;
     var blastSE;
@@ -177,6 +193,11 @@ var keyUp, keyDown, keyLeft, keyRight, keySPACE, keyENTER, keyA, keyS, keyD, key
     var ultimateSE;
     var ultimatevoiceSE;
     var voicebossSE;
+    var voicebossDeadSE;
+    var enemyVoiceDeadSE;
+    var rechargeHpSE;
+    var beamBossSE;
+    var explosionBSE;
 }
 
 
@@ -197,6 +218,9 @@ class Game extends Phaser.Scene {
         this.load.spritesheet('kill', animationKill, { frameWidth: 75, frameHeight: 127 });
         this.load.image('slash', slash);
         this.load.image('flare', flare);
+        this.load.image('heart', heart);
+        this.load.image('beam', beam);
+        this.load.spritesheet('explosionB', explosionB, { frameWidth: 100, frameHeight: 100 });
 
 
         // Arquivos de aúdio
@@ -218,10 +242,16 @@ class Game extends Phaser.Scene {
         this.load.audio('ultimateSd', ultimateSd);
         this.load.audio('ultimatevoiceSd', ultimatevoiceSd);
         this.load.audio('voicebossSd', voicebossSd);
+        this.load.audio('voicebossDeadSd', voicebossDeadSd);
+        this.load.audio('voiceenemySd', enemyVoiceDeadSd);
+        this.load.audio('rechargeHpSd', rechargeHpSd);
+        this.load.audio('beamBossSd', beamBSd);
+        this.load.audio('explosionSd', explosionSd);
     }
 
 
     create() {
+        var exibirHP = document.querySelector('#healthbar').style.display = "block";
 
         music = this.sound.add('musicBg', { volume: 0.3, loop: true });
         music.play();
@@ -243,11 +273,19 @@ class Game extends Phaser.Scene {
         ultimateSE = this.sound.add('ultimateSd', { volume: 0.4 });
         ultimatevoiceSE = this.sound.add('ultimatevoiceSd', { volume: 0.3 });
         voicebossSE = this.sound.add('voicebossSd', { volume: 0.4 });
+        voicebossDeadSE = this.sound.add('voicebossDeadSd', { volume: 0.3 });
+        enemyVoiceDeadSE = this.sound.add('voiceenemySd', { volume: 0.3 });
+        rechargeHpSE = this.sound.add('rechargeHpSd', { volume: 0.3 });
+        beamBossSE = this.sound.add('beamBossSd', { volume: 0.4 });
+        explosionBSE = this.sound.add('explosionSd', { volume: 0.4 });
 
 
         bgMap = this.add.image(0, -170, 'bgGameMap').setOrigin(0, 0).setScrollFactor(1);
         kill = this.add.sprite(0, 0, 'kill').setOrigin(0.5, 0.5);
         kill.visible = 0;
+
+        controlExplosion = this.add.sprite(0, 0, 'explosionB').setOrigin(0.5, 0.5);
+        controlExplosion.visible = 0;
 
         groundStatic = this.physics.add.staticGroup();
         groundStatic.create(5020, 585, 'ground').setOrigin(0.5, 0.5);
@@ -268,6 +306,7 @@ class Game extends Phaser.Scene {
         playerHealth = 100;
         playerNaoMove = 0;
         finalControl = 0;
+        aux = 0;
         gsap.to('#playerHealth', {
             width: playerHealth + '%'
         })
@@ -287,10 +326,21 @@ class Game extends Phaser.Scene {
 
         boss = this.physics.add.sprite(9500, 50, 'boss').setScale(2).setOrigin(0.5, 0.5);
         boss.setBodySize(boss.width * 0.45, boss.height * 0.75).setOffset(32, 30);
+        boss.depth = 1;
         hitBoxBoss = new Phaser.Geom.Rectangle(boss.x, boss.y, 180, 170);
 
         // graphics.fillRectShape(hitBoxBoss);
         this.physics.add.existing(hitBoxBoss);
+
+
+        // Corações de recuperar vida ---------------------------------------------------------//
+        heartHP = this.physics.add.group({
+            runChildUpdate: true,
+            bounceY: 0.2,
+            collideWorldBounds: true
+        });
+        this.physics.add.collider(heartHP, groundStatic);
+        controlHeart = 0;
 
 
         {// INIMIGOS -------------------------------------------------------------------------//  
@@ -400,14 +450,14 @@ class Game extends Phaser.Scene {
                 this.anims.create({
                     key: 'downR',
                     frames: this.anims.generateFrameNumbers('vergil', { start: 8, end: 9 }),
-                    frameRate: 10,
+                    frameRate: 13,
                     repeat: -1,
                     repeatDelay: 10000
                 })
                 this.anims.create({
                     key: 'downL',
                     frames: this.anims.generateFrameNumbers('vergil', { start: 17, end: 18 }),
-                    frameRate: 7,
+                    frameRate: 13,
                     repeat: -1,
                     repeatDelay: 10000
                 })
@@ -762,12 +812,24 @@ class Game extends Phaser.Scene {
                 frameRate: 10,
                 repeat: -1
             })
+            this.anims.create({
+                key: 'bossbeamataqueL',
+                frames: this.anims.generateFrameNumbers('boss', { start: 24, end: 30 }),
+                frameRate: 10
+            })
         }
 
         this.anims.create({
             key: 'killEnemy',
             frames: this.anims.generateFrameNumbers('kill', { start: 0, end: 10 }),
             frameRate: 15,
+            repeat: 0
+        })
+
+        this.anims.create({
+            key: 'explosionBeam',
+            frames: this.anims.generateFrameNumbers('explosionB', { start: 0, end: 55 }),
+            frameRate: 27,
             repeat: 0
         })
 
@@ -1050,6 +1112,47 @@ class Game extends Phaser.Scene {
                 player.setTexture(animName + animFrame); //Muda o sprite
             }
         }
+
+        var hp;
+        var distBeam;
+
+        function collectHeart(player, heart) {
+            heart.disableBody(true, true);
+            rechargeHpSE.play();
+
+            if (playerHealth == 95) {
+                playerHealth += 5;
+            } else if (playerHealth == 90) {
+                playerHealth += 10;
+            } else if (playerHealth <= 85) {
+                playerHealth += 15;
+            } else {
+                playerHealth += 0;
+            }
+
+            gsap.to('#playerHealth', {
+                width: playerHealth + '%'
+            })
+
+        }
+
+        function hitBeam(player, beam) {
+            controlExplosion.x = beam.x - 10;
+            controlExplosion.y = beam.y;
+            controlExplosion.visible = 1;
+            controlExplosion.anims.play('explosionBeam', true).setScale(2);
+            explosionBSE.play();
+            beam.destroy();
+            damageSE.play();
+            player.x -= 40;
+            playerHealth -= 15;
+
+            gsap.to('#playerHealth', {
+                width: playerHealth + '%'
+            })
+            qtBeams--;
+        }
+
 
         function colisaoAttack({ hitbox, inimigo }) {
             return (
@@ -1626,12 +1729,12 @@ class Game extends Phaser.Scene {
                     runControl = 1;
                 }
                 else if (key_p1_DOWN_status > 0 && sideControl == 0) {
-                    player.setBodySize(player.width * 0.25, player.height * 0.57).setOffset(48, 36);
+                    player.setBodySize(player.width * 0.25, player.height * 0.50).setOffset(48, 42);
                     player.anims.play('downR', true);
                     downHold = 1;
                 }
                 else if (key_p1_DOWN_status > 0 && sideControl == 1) {
-                    player.setBodySize(player.width * 0.25, player.height * 0.57).setOffset(38, 36);
+                    player.setBodySize(player.width * 0.25, player.height * 0.50).setOffset(38, 42);
                     player.anims.play('downL', true);
                     downHold = 1;
                 }
@@ -1985,6 +2088,15 @@ class Game extends Phaser.Scene {
                     death7.anims.play('deathidle', true);
                     boss.anims.play('bossmoveL', true);
                     enemyAttack();
+
+                    let dispara = Phaser.Math.Between(1, 3);
+                    if (dispara == 1) {
+                        boss.x += 0;
+                        boss.anims.play('bossbeamataqueL', true);
+                        beamBoss = this.physics.add.image(boss.x - 52, boss.y + 12, 'beam').setScale(1.5).setOrigin(0.25, 0.5);
+                        beamBossSE.play();
+                        qtBeams++;
+                    }
                 }
                 death.x += vel * dir;
                 death2.x += vel * dir;
@@ -1994,6 +2106,20 @@ class Game extends Phaser.Scene {
                 death6.x += vel * dir;
                 death7.x += vel * dir;
                 boss.x += vel * dir;
+                if (qtBeams > 0) {
+                    beamBoss.x -= 7;
+                    if (beamBoss.x < 8500) {
+                        beamBoss.destroy();
+                        qtBeams--;
+                    }
+                }
+
+
+                if (qtBeams > 0) {
+                    distBeam = Phaser.Math.Distance.Between(beamBoss.x, beamBoss.y, player.x, player.y);
+                    beamBoss.body.setAllowGravity(false);
+                }
+
 
                 // if (frames < 100 && dir == 0) {
                 //     death2.anims.play('deathidle', true);
@@ -2009,76 +2135,6 @@ class Game extends Phaser.Scene {
                 // }
                 // death2.x += vel * dir;
 
-                // if (frames < 100 && dir == 0) {
-                //     death3.anims.play('deathidle', true);
-                // }
-                // if (frames > 100) {
-                //     dir = 1;
-                //     death3.anims.play('deathidleL', true);
-                // }
-                // if (dir == 1 && frames > 200) {
-                //     dir = -1;
-                //     frames = 0;
-                //     death3.anims.play('deathidle', true);
-                // }
-                // death3.x += vel * dir;
-
-                // if (frames < 100 && dir == 0) {
-                //     death4.anims.play('deathidle', true);
-                // }
-                // if (frames > 100) {
-                //     dir = 1;
-                //     death4.anims.play('deathidleL', true);
-                // }
-                // if (dir == 1 && frames > 200) {
-                //     dir = -1;
-                //     frames = 0;
-                //     death4.anims.play('deathidle', true);
-                // }
-                // death4.x += vel * dir;
-
-                // if (frames < 100 && dir == 0) {
-                //     death5.anims.play('deathidle', true);
-                // }
-                // if (frames > 100) {
-                //     dir = 1;
-                //     death5.anims.play('deathidleL', true);
-                // }
-                // if (dir == 1 && frames > 200) {
-                //     dir = -1;
-                //     frames = 0;
-                //     death5.anims.play('deathidle', true);
-                // }
-                // death5.x += vel * dir;
-
-                // if (frames < 100 && dir == 0) {
-                //     death6.anims.play('deathidle', true);
-                // }
-                // if (frames > 100) {
-                //     dir = 1;
-                //     death6.anims.play('deathidleL', true);
-                // }
-                // if (dir == 1 && frames > 200) {
-                //     dir = -1;
-                //     frames = 0;
-                //     death6.anims.play('deathidle', true);
-                // }
-                // death6.x += vel * dir;
-
-                // if (frames < 100 && dir == 0) {
-                //     death7.anims.play('deathidle', true);
-                // }
-                // if (frames > 100) {
-                //     dir = 1;
-                //     death7.anims.play('deathidleL', true);
-                // }
-                // if (dir == 1 && frames > 200) {
-                //     dir = -1;
-                //     frames = 0;
-                //     death7.anims.play('deathidle', true);
-                // }
-                // death7.x += vel * dir;
-
             }
 
             {// Morte do inimigos ---------------------------------------------------------------------//
@@ -2091,6 +2147,15 @@ class Game extends Phaser.Scene {
 
                     death.visible = 0;
                     death.y += 0.7;
+                    if (controlHeart == 0) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death.x, death.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
+
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
 
@@ -2104,6 +2169,15 @@ class Game extends Phaser.Scene {
 
                     death2.visible = 0;
                     death2.y += 0.7;
+
+                    if (controlHeart == 1) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death2.x, death2.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
                 }
@@ -2116,6 +2190,15 @@ class Game extends Phaser.Scene {
 
                     death3.visible = 0;
                     death3.y += 0.7;
+
+                    if (controlHeart == 2) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death3.x, death3.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
                 }
@@ -2128,6 +2211,15 @@ class Game extends Phaser.Scene {
 
                     death4.visible = 0;
                     death4.y += 0.7;
+
+                    if (controlHeart == 3) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death4.x, death4.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
                 }
@@ -2140,6 +2232,15 @@ class Game extends Phaser.Scene {
 
                     death5.visible = 0;
                     death5.y += 0.7;
+
+                    if (controlHeart == 4) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death5.x, death5.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
                 }
@@ -2152,6 +2253,15 @@ class Game extends Phaser.Scene {
 
                     death6.visible = 0;
                     death6.y += 0.7;
+
+                    if (controlHeart == 5) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death6.x, death6.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
                 }
@@ -2164,6 +2274,15 @@ class Game extends Phaser.Scene {
 
                     death7.visible = 0;
                     death7.y += 0.7;
+
+                    if (controlHeart == 6) {
+                        enemyVoiceDeadSE.play();
+                        let random = Phaser.Math.Between(1, 2);
+                        if (random == 1) {
+                            hp = heartHP.create(death7.x, death7.y - 10, 'heart').setScale(2).setOrigin(0.5, 0.5);
+                        }
+                        controlHeart += 1;
+                    }
                     // death.anims.play('killEnemy', true)
                     // death.once('animationcomplete', () => { death.body.enable = false; });
                 }
@@ -2171,6 +2290,7 @@ class Game extends Phaser.Scene {
                     kill.x = boss.x;
                     kill.y = boss.y;
                     kill.visible = 1;
+                    voicebossDeadSE.play();
                     kill.anims.play('killEnemy', true).setScale(2);
                     boss.body.enable = false;
 
@@ -2185,7 +2305,11 @@ class Game extends Phaser.Scene {
         // CONDIÇÕES PARA GAME OVER --------------------------------------------------------------//
         if (playerHealth == 0 && sideControl == 0 && playerNaoMove == 0) {
             player.setBodySize(player.width * 0.85, player.height * 0.25).setOffset(10, 55);
-            player.anims.play('morteR');
+            if (aux == 0) {
+                player.anims.play('morteR');
+                aux = 1;
+            }
+
             finalControl++;
             if (volumeControl > 0) {
                 volumeControl -= 0.003;
@@ -2199,7 +2323,11 @@ class Game extends Phaser.Scene {
         }
         if (playerHealth == 0 && sideControl == 1 && playerNaoMove == 0) {
             player.setBodySize(player.width * 0.85, player.height * 0.25).setOffset(10, 55);
-            player.anims.play('morteL');
+            if (aux == 0) {
+                player.anims.play('morteL');
+                aux = 1;
+            }
+
             finalControl++;
             if (volumeControl > 0) {
                 volumeControl -= 0.003;
@@ -2237,6 +2365,9 @@ class Game extends Phaser.Scene {
                 this.scene.start("TelaFinalPlayerWins");
             }
         }
+
+        this.physics.add.overlap(player, hp, collectHeart, null, this);
+        this.physics.add.collider(player, beamBoss, hitBeam, null, this);
     };
 
 }

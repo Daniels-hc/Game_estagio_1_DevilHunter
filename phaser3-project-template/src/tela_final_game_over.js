@@ -20,6 +20,8 @@ class TelaFinalGameOver extends Phaser.Scene {
     }
 
     create() {
+        var ocultarHP = document.querySelector('#healthbar').style.display = "none";
+
         var music = this.sound.add('musicGO', { volume: 0.3, loop: true });
         music.play();
 
